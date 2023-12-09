@@ -37,8 +37,6 @@ export function SignIn() {
   const [userInfo, setUserInfo] = useState(null)
   const [chainId, setChainId] = useState()
   const [balance, setBalance] = useState()
-  const [consoleMessage, setConsoleMessage] = useState('')
-  const [consoleTitle, setConsoleTitle] = useState('')
   const [provider, setProvider] = useState()
   const [safeFactory, setSafeFactory] = useState()
 
@@ -69,53 +67,59 @@ export function SignIn() {
   useEffect(() => {
     if (!safeAuthPack || !isAuthenticated) return
     ;(async () => {
-      const web3Provider = safeAuthPack.getProvider()
-      const userInfo = await safeAuthPack.getUserInfo()
-
-      setUserInfo(userInfo)
-
-      if (web3Provider) {
-        const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
-        const signer = await provider.getSigner()
-        const signerAddress = await signer.getAddress()
-
-        setChainId((await provider?.getNetwork()).chainId.toString())
-        setBalance(
-          ethers.formatEther((await provider.getBalance(signerAddress)))
-        )
-        setProvider(provider)
-      }
+      const info = await getUserInfo();
+      const signer = await getSigner();
+      console.log("SIGNER", signer)
+      console.log("Info", info)
     })()
   }, [isAuthenticated])
 
+  const getSigner = async () => {
+    const web3Provider = safeAuthPack?.getProvider()
+    if (web3Provider) {
+      const provider = new ethers.providers.Web3Provider(web3Provider)
+      setProvider(provider)
+      const signer = await provider.getSigner()
+      return signer;
+
+      // const signerAddress = await signer.getAddress()
+      // setChainId((await provider?.getNetwork()).chainId.toString())
+      // setBalance(
+      //   ethers.formatEther((await provider.getBalance(signerAddress)))
+      // )
+    }
+  }
+
+  const getUserInfo = async () => {
+    const userInfo = await safeAuthPack?.getUserInfo()
+    setUserInfo(userInfo)
+    return userInfo;
+  }
+
   const login = async () => {
     const signInInfo = await safeAuthPack?.signIn()
-
-    initSafeFactory()
+    console.log("signInInfo", signInInfo)
+    await initSafeFactory()
 
     setSafeAuthSignInResponse(signInInfo)
     setIsAuthenticated(true)
-  }
 
-  const getSigner = async () => {
-    if(safeAuthPack == null) return
-    const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
-    const signer = await provider.getSigner()
-    
-    return signer
-  }
+    const info = await getUserInfo();
+    const signer = await getSigner();
+    console.log("SIGNER", signer)
+    console.log("Info", info)
+}
 
-  const getETHAdapter = async () => {
-    if(safeAuthPack == null) return
-    new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
-    const signer = await provider.getSigner()
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: signer
-    })
+  // const getETHAdapter = async () => {
+  //   if(safeAuthPack == null) return
+  //   const signer = await provider.getSigner()
+  //   const ethAdapter = new EthersAdapter({
+  //     ethers,
+  //     signerOrProvider: signer
+  //   })
 
-    return ethAdapter
-  }
+  //   return ethAdapter
+  // }
 
   async function getBalance() {
     try {
@@ -136,11 +140,6 @@ export function SignIn() {
     setSafeAuthSignInResponse(null)
   }
 
-  const getUserInfo = async () => {
-    const userInfo = await safeAuthPack?.getUserInfo()
-
-    console.log(userInfo);
-  }
 
   const getAccounts = async () => {
     const accounts = await provider?.send('eth_accounts', [])
@@ -155,16 +154,14 @@ export function SignIn() {
   }
 
   const initSafeFactory = async () => {
-    // Wrap Web3Auth provider with ethers
-    const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
-    const signer = await provider.getSigner()
+    const signer = await getSigner();
+
     const ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: signer
     })
 
     const safeFactory = await SafeFactory.create({ ethAdapter: ethAdapter })
-    
     setSafeFactory(safeFactory)
   }
 
@@ -231,81 +228,15 @@ export function SignIn() {
   }
 
   return (
-    <section className="m-8 flex gap-4">
-      <div className="w-full lg:w-3/5 mt-24">
+    <section className="m-1 flex gap-2">
+      <img src="/img/app-logo.png" className="absolute left-5 top-5" alt="app-logo" size="lg" height={150} width={150} variant="rounded" />
+      <div className="w-full lg:w-3/5 mx-auto my-auto">
+        <Card className="my-auto mx-auto w-80 max-w-screen-lg lg:w-1/2 p-10 border-2 shadow-2xl min-h-[350px]">
         <div className="text-center">
-          <Typography variant="h2" className="font-bold mb-4">Sign In</Typography>
-          <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">Enter your email and password to Sign In.</Typography>
-        </div>
-        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2">
-          <div className="mb-1 flex flex-col gap-6">
-            <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-              Your email
-            </Typography>
-            <Input
-              size="lg"
-              placeholder="name@mail.com"
-              className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-            />
-            <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-              Password
-            </Typography>
-            <Input
-              type="password"
-              size="lg"
-              placeholder="********"
-              className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-            />
-          </div>
-          <Checkbox
-            label={
-              <Typography
-                variant="small"
-                color="gray"
-                className="flex items-center justify-start font-medium"
-              >
-                I agree the&nbsp;
-                <a
-                  href="#"
-                  className="font-normal text-black transition-colors hover:text-gray-900 underline"
-                >
-                  Terms and Conditions
-                </a>
-              </Typography>
-            }
-            containerProps={{ className: "-ml-2.5" }}
-          />
-          <Button className="mt-6" fullWidth>
-            Sign In
-          </Button>
-
-          <div className="flex items-center justify-between gap-2 mt-6">
-            <Checkbox
-              label={
-                <Typography
-                  variant="small"
-                  color="gray"
-                  className="flex items-center justify-start font-medium"
-                >
-                  Subscribe me to newsletter
-                </Typography>
-              }
-              containerProps={{ className: "-ml-2.5" }}
-            />
-            <Typography variant="small" className="font-medium text-gray-900">
-              <a href="#">
-                Forgot Password
-              </a>
-            </Typography>
+          <Typography variant="h3" color="black" className="font-bold mb-4 font-sans ">Sign In</Typography>
           </div>
           <div className="space-y-4 mt-8">
-            <Button size="lg" color="white" className="flex items-center gap-2 justify-center shadow-md" onClick={login} fullWidth>
+            <Button size="lg" variant="outlined" className="flex items-center gap-2  justify-center shadow-lg" onClick={login} fullWidth>
               <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clipPath="url(#clip0_1156_824)">
                   <path d="M16.3442 8.18429C16.3442 7.64047 16.3001 7.09371 16.206 6.55872H8.66016V9.63937H12.9813C12.802 10.6329 12.2258 11.5119 11.3822 12.0704V14.0693H13.9602C15.4741 12.6759 16.3442 10.6182 16.3442 8.18429Z" fill="#4285F4" />
@@ -321,28 +252,88 @@ export function SignIn() {
               </svg>
               <span>Sign in With Google</span>
             </Button>
-            <Button size="lg" color="white" className="flex items-center gap-2 justify-center shadow-md" onClick={fn} fullWidth>
+            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={fn} fullWidth>
               <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
               <span>Sign in With Twitter</span>
             </Button>
-            <Button size="lg" color="white" className="flex items-center gap-2 justify-center shadow-md" onClick={getBalance} fullWidth>
-              <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
-              <span>Info</span>
-            </Button>
           </div>
-          <Typography variant="paragraph" className="text-center text-blue-gray-500 font-medium mt-4">
-            Not registered?
-            <Link to="/auth/sign-up" className="text-gray-900 ml-1">Create account</Link>
-          </Typography>
-        </form>
+
+        </Card>
 
       </div>
-      <div className="w-2/5 h-full hidden lg:block">
-        <img
-          src="/img/pattern.png"
-          className="h-full w-full object-cover rounded-3xl"
-        />
-      </div>
+      <Card className="bg-blue-100 w-2/5 m-1" style={{height:"98vh"}}>
+      <div class="flex flex-col justify-center items-center h-screen gap-4">
+        <Card className="shadow-lg w-2/3 h-18 p-4" color="white">
+          <div className="flex flex-cols-2 ">
+            <div className="w-1/6 flex">
+            <img src="/img/twitter-logo.svg" className="mx-auto my-auto" height={32} width={32 } alt="" />
+            </div>
+            <div className="w-5/6">
+            <div className="justify-center items-center">
+              <div className="flex justify-between items-center">
+                <div class="text-md font-bold">Twitter</div>
+                <div class="text-md font-bold">$100.00</div>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-between items-center">
+            <div class="text-sm font-normal">Last month</div>
+            <div className="flex items-center gap-2">
+            <img src="/img/solana-sol-logo.svg" height={20} width={20} alt="" />
+          <Typography className="font-sans font-sm font-normal">1.29 SOL</Typography>
+            </div>
+            </div>
+          </div>
+          </div>
+        </Card>
+        <Card className="shadow-lg w-2/3 h-18 p-4" color="white">
+          <div className="flex flex-cols-2 ">
+            <div className="w-1/6 flex">
+            <img src="/img/Instagram_logo_2016.svg" className="mx-auto my-auto" height={32} width={32 } alt="" />
+            </div>
+            <div className="w-5/6">
+            <div className="justify-center items-center">
+              <div className="flex justify-between items-center">
+                <div class="text-md font-bold">Instagram</div>
+                <div class="text-md font-bold">$50.00</div>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-between items-center">
+            <div class="text-sm font-normal">A week ago</div>
+            <div className="flex items-center gap-2">
+            <img src="/img/ethereum-eth-logo.svg" height={16} width={16} alt="" />
+          <Typography className="font-sans font-sm font-normal">0.02 ETH</Typography>
+            </div>
+
+            </div>
+          </div>
+          </div>
+        </Card>
+        <Card className="shadow-lg w-2/3 h-18 p-4" color="white">
+          <div className="flex flex-cols-2 ">
+            <div className="w-1/6 flex">
+            <img src="/img/discord-icon-svgrepo-com.svg" className="mx-auto my-auto" height={32} width={32 } alt="" />
+            </div>
+            <div className="w-5/6">
+            <div className="justify-center items-center">
+              <div className="flex justify-between items-center">
+                <div class="text-md font-bold">Discord</div>
+                <div class="text-md font-bold">$10.00</div>
+              </div>
+            </div>
+            <div className="mt-2 flex justify-between items-center">
+            <div class="text-sm font-normal">Yesterday</div>
+            <div className="flex items-center gap-2">
+            <img src="/img/polygon-matic-logo.svg" height={20} width={20} alt="" />
+          <Typography className="font-sans font-sm font-normal">10.75 MATIC</Typography>
+            </div>
+            </div>
+          </div>
+          </div>
+        </Card>
+        <Typography className="font-sans font-bold-900 w-2/3 ml-2" color='black' variant="h2">INSTANT PAYMENTS ANYWHERE.</Typography>
+        <Typography variant="sm" className="font-sans font-normal w-2/3 -mt-4 -mr-2  ">A fully integrated suite of web3 payment solutions to supercharge your crypto payments.</Typography>
+  </div>
+      </Card>
 
     </section>
   );
