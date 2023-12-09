@@ -6,7 +6,7 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import { useEffect, useState } from 'react'
-import { BrowserProvider, ethers } from 'ethers'
+import { ethers } from 'ethers'
 import { Link, json } from "react-router-dom";
 import Safe, { EthersAdapter, SafeFactory } from '@safe-global/protocol-kit'
 
@@ -17,11 +17,18 @@ import {
   SafeAuthUserInfo
 } from '@safe-global/auth-kit'
 
-
-
+const options = {
+  enableLogging: true,
+  chainConfig: {
+    chainId: '0x5', // Goerli chain ID
+    rpcTarget: 'https://rpc.ankr.com/eth_goerli',
+    blockExplorerUrl: 'https://goerli.etherscan.io/',
+    isTestnet: true
+  }
+}
 
 export function SignIn() {
-  const key = "58dd93d7c4964b2d1c0ff97dd14153eddeee7e347e42cf8b3209975255a7b4df"
+  
   const [safeAuthPack, setSafeAuthPack] = useState()
   const [isAuthenticated, setIsAuthenticated] = useState(!!safeAuthPack?.isAuthenticated)
   const [safeAuthSignInResponse, setSafeAuthSignInResponse] = useState(
@@ -38,22 +45,9 @@ export function SignIn() {
   useEffect(() => {
 
     ;(async () => {
-      const options = {
-        enableLogging: true,
-        chainConfig: {
-          chainId: '0x5', // Goerli chain ID
-          rpcTarget: 'https://rpc.ankr.com/eth_goerli',
-          blockExplorerUrl: 'https://goerli.etherscan.io/',
-          isTestnet: true
-        }
-      }
-
+      
       const authPack = new SafeAuthPack()
-
       await authPack.init(options)
-
-      console.log('safeAuthPack:safeEmbed', authPack.safeAuthEmbed)
-
       setSafeAuthPack(authPack)
 
       authPack.subscribe('accountsChanged', async (accounts) => {
@@ -81,7 +75,7 @@ export function SignIn() {
       setUserInfo(userInfo)
 
       if (web3Provider) {
-        const provider = new BrowserProvider(safeAuthPack.getProvider())
+        const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
         const signer = await provider.getSigner()
         const signerAddress = await signer.getAddress()
 
@@ -105,7 +99,7 @@ export function SignIn() {
 
   const getSigner = async () => {
     if(safeAuthPack == null) return
-    const provider = new BrowserProvider(safeAuthPack.getProvider())
+    const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
     const signer = await provider.getSigner()
     
     return signer
@@ -113,8 +107,7 @@ export function SignIn() {
 
   const getETHAdapter = async () => {
     if(safeAuthPack == null) return
-
-    const provider = new BrowserProvider(safeAuthPack?.getProvider())
+    new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
     const signer = await provider.getSigner()
     const ethAdapter = new EthersAdapter({
       ethers,
@@ -163,7 +156,7 @@ export function SignIn() {
 
   const initSafeFactory = async () => {
     // Wrap Web3Auth provider with ethers
-    const provider = new BrowserProvider(safeAuthPack?.getProvider())
+    const provider = new ethers.providers.AlchemyProvider(safeAuthPack.getProvider(), import.meta.env.VITE_SAFE_ALCHEMY_API_KEY)
     const signer = await provider.getSigner()
     const ethAdapter = new EthersAdapter({
       ethers,
@@ -228,10 +221,13 @@ export function SignIn() {
     // uiConsole('Safe Transaction Result', txResult)
   }
 
+
+
   const fn = async () => {
-    const adapter = await getETHAdapter();
-    const safeSdk = await Safe.create({ ethAdapter: adapter, safeAddress })
-    console.log(safeSdk.getOwners())
+    // const adapter = await getETHAdapter();
+    // const safeSdk = await Safe.create({ ethAdapter: adapter, safeAddress })
+    // console.log(safeSdk.getOwners())
+    console.log("HIi", import.meta.env)
   }
 
   return (
