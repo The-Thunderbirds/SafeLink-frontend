@@ -17,6 +17,8 @@ import {
   SafeAuthUserInfo
 } from '@safe-global/auth-kit'
 
+import { redirect } from "react-router-dom";
+
 const options = {
   enableLogging: true,
   chainConfig: {
@@ -30,7 +32,7 @@ const options = {
 export function SignIn() {
   
   const [safeAuthPack, setSafeAuthPack] = useState()
-  const [isAuthenticated, setIsAuthenticated] = useState(!!safeAuthPack?.isAuthenticated)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [safeAuthSignInResponse, setSafeAuthSignInResponse] = useState(
     null
   )
@@ -47,6 +49,14 @@ export function SignIn() {
       const authPack = new SafeAuthPack()
       await authPack.init(options)
       setSafeAuthPack(authPack)
+
+      if (authPack.isAuthenticated) {
+        const signInInfo = await authPack?.signIn()
+        setSafeAuthSignInResponse(signInInfo)
+        setIsAuthenticated(true)
+      }
+
+      await storeInfoInLocalStorage();
 
       authPack.subscribe('accountsChanged', async (accounts) => {
         console.log('safeAuthPack:accountsChanged', accounts, authPack.isAuthenticated)
@@ -67,10 +77,10 @@ export function SignIn() {
   useEffect(() => {
     if (!safeAuthPack || !isAuthenticated) return
     ;(async () => {
-      const info = await getUserInfo();
-      const signer = await getSigner();
-      console.log("SIGNER", signer)
-      console.log("Info", info)
+      await storeInfoInLocalStorage();
+      if(isAuthenticated) {
+        redirect('/')
+      }
     })()
   }, [isAuthenticated])
 
@@ -98,17 +108,27 @@ export function SignIn() {
 
   const login = async () => {
     const signInInfo = await safeAuthPack?.signIn()
-    console.log("signInInfo", signInInfo)
     await initSafeFactory()
 
     setSafeAuthSignInResponse(signInInfo)
-    setIsAuthenticated(true)
+
+    await storeInfoInLocalStorage()
+    if(isAuthenticated) {
+      redirect("/");
+    }
+  }
+
+  const storeInfoInLocalStorage = async () => {
+    const isAuthenticated = safeAuthPack.isAuthenticated
+    setIsAuthenticated(isAuthenticated);
 
     const info = await getUserInfo();
     const signer = await getSigner();
-    console.log("SIGNER", signer)
-    console.log("Info", info)
-}
+    localStorage.setItem("isAuthenticated", isAuthenticated);
+    localStorage.setItem("userInfo", JSON.stringify(info))
+    localStorage.setItem("signer", JSON.stringify(signer))
+    localStorage.setItem("authSignInInfo", JSON.stringify(safeAuthSignInResponse))
+  }
 
   // const getETHAdapter = async () => {
   //   if(safeAuthPack == null) return
@@ -136,7 +156,8 @@ export function SignIn() {
 
   const logout = async () => {
     await safeAuthPack?.signOut()
-
+    
+    setIsAuthenticated(false)
     setSafeAuthSignInResponse(null)
   }
 
@@ -252,7 +273,7 @@ export function SignIn() {
               </svg>
               <span>Sign in With Google</span>
             </Button>
-            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={fn} fullWidth>
+            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={logout} fullWidth>
               <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
               <span>Sign in With Twitter</span>
             </Button>
