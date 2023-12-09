@@ -33,7 +33,7 @@ export function Profile() {
           <div className="mb-10 flex items-center justify-between flex-wrap gap-6">
             <div className="flex items-center gap-6">
               <Avatar
-                src="/img/bruce-mars.jpeg"
+                src={ JSON.parse(localStorage.getItem("userInfo"))['profileImage']}
                 alt="bruce-mars"
                 size="xl"
                 variant="rounded"
@@ -41,7 +41,7 @@ export function Profile() {
               />
               <div>
                 <Typography variant="h5" color="blue-gray" className="mb-1">
-                  Richard Davis
+                  { JSON.parse(localStorage.getItem("userInfo"))['name']}
                 </Typography>
                 <Typography
                   variant="small"
@@ -100,12 +100,10 @@ export function Profile() {
             </div>
             <ProfileInfoCard
               title="Profile Information"
-              description="Hi, I'm Alec Thompson, Decisions: If you can't decide, the answer is no. If two equally difficult paths, choose the one more painful in the short term (pain avoidance is creating an illusion of equality)."
               details={{
-                "first name": "Alec M. Thompson",
-                mobile: "(44) 123 1234 123",
-                email: "alecthompson@mail.com",
-                location: "USA",
+                "first name": JSON.parse(localStorage.getItem("userInfo"))['name'],
+                email: JSON.parse(localStorage.getItem("userInfo"))['email'],
+                location: "India",
                 social: (
                   <div className="flex items-center gap-4">
                     <i className="fa-brands fa-facebook text-blue-700" />

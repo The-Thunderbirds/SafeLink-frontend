@@ -104,9 +104,9 @@ export function SignIn() {
 
     await createJointSafeWallet()
     await storeInfoInLocalStorage()
-    if(isAuthenticated) {
-      redirect("/");
-    }
+    // if(isAuthenticated) {
+    //   redirect("/");
+    // }
   }
 
   const storeInfoInLocalStorage = async () => {
@@ -119,6 +119,7 @@ export function SignIn() {
     localStorage.setItem("userInfo", JSON.stringify(info))
     localStorage.setItem("signer", JSON.stringify(signer))
     localStorage.setItem("authSignInInfo", JSON.stringify(safeAuthSignInResponse))
+    window.location.href = '/dashboard/send/'
   }
 
   async function getBalance() {

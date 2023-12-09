@@ -32,7 +32,7 @@ export function Sidenav({ brandImg, brandName, routes }) {
             variant="h6"
             color={sidenavType === "dark" ? "white" : "blue-gray"}
           >
-            {brandName}
+            <img src="/img/app-logo.png" className="mx-auto" alt="app-logo" size="lg" height={150} width={150} variant="rounded" />
           </Typography>
         </Link>
         <IconButton
