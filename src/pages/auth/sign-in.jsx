@@ -144,10 +144,11 @@ export function SignIn() {
   }
 
   const logout = async () => {
-    await safeAuthPack?.signOut()
+    // await safeAuthPack?.signOut()
     
     setIsAuthenticated(false)
     setSafeAuthSignInResponse(null)
+    await storeInfoInLocalStorage();
   }
 
 
