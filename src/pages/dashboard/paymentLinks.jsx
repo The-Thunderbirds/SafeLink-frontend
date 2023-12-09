@@ -50,7 +50,10 @@ export function PaymentLinks() {
 
   useEffect(() => {
     const user = localStorage.getItem("userInfo");
-    setUserInfo(JSON.parse(user));
+    if(user && user !== "undefined") {
+      console.log("User info", user);
+      setUserInfo(JSON.parse(user));
+    }
   }, [])
 
   const createPaymentRequest = async () => {
@@ -250,7 +253,7 @@ export function PaymentLinks() {
               className="max-h-72 sm:w-1/2 lg:w-2/5 object-cover rounded-3xl  mx-0 sm:my-auto"
               style={{marginTop:"20vh"}}
             /> */}
-          <Card color="black" shadow={false} className="px-4 max-h-60 w-full" style={{ marginTop: "20vh", marginLeft: "2.5%", maxWidth: "45%", background: "radial-gradient( circle 877px at 1% 82.3%, rgb(55, 60, 245) 2%, rgba(234,161,15,0.90) 101.2% )" }}>
+          <Card color="transparent" shadow={false} className="px-4 max-h-60 w-full" style={{ marginTop: "20vh", marginLeft: "2.5%", maxWidth: "45%", background: "radial-gradient( circle 877px at 1% 82.3%, rgb(55, 60, 245) 2%, rgba(234,161,15,0.90) 101.2% )" }}>
             <CardHeader
               color="transparent"
               floated={false}

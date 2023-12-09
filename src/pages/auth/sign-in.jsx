@@ -19,15 +19,7 @@ import {
 // 0x37A34c5c036aaD0FED7a7B8f4D73aDdfb69AeaCB - safe
 import { redirect } from "react-router-dom";
 
-const options = {
-  enableLogging: true,
-  chainConfig: {
-    chainId: '0x5', // Goerli chain ID
-    rpcTarget: 'https://rpc.ankr.com/eth_goerli',
-    blockExplorerUrl: 'https://goerli.etherscan.io/',
-    isTestnet: true
-  }
-}
+import { options } from "@/configs";
 
 export function SignIn() {
   
@@ -108,10 +100,9 @@ export function SignIn() {
 
   const login = async () => {
     const signInInfo = await safeAuthPack?.signIn()
-    await initSafeFactory()
-
     setSafeAuthSignInResponse(signInInfo)
 
+    await createJointSafeWallet()
     await storeInfoInLocalStorage()
     if(isAuthenticated) {
       redirect("/");
@@ -119,7 +110,7 @@ export function SignIn() {
   }
 
   const storeInfoInLocalStorage = async () => {
-    const isAuthenticated = safeAuthPack.isAuthenticated
+    const isAuthenticated = safeAuthPack?.isAuthenticated
     setIsAuthenticated(isAuthenticated);
 
     const info = await getUserInfo();
@@ -144,7 +135,7 @@ export function SignIn() {
   }
 
   const logout = async () => {
-    // await safeAuthPack?.signOut()
+    await safeAuthPack?.signOut()
     
     setIsAuthenticated(false)
     setSafeAuthSignInResponse(null)
@@ -182,6 +173,8 @@ export function SignIn() {
     if(safeFactory == null) {
       await initSafeFactory()
     }
+    console.log("safeAuthSignInResponse", safeAuthSignInResponse)
+    if (safeAuthSignInResponse && safeAuthSignInResponse.safes && safeAuthSignInResponse.safes.length > 0) return '0x0';
 
     const safeAccountConfig = {
       owners: [
@@ -192,12 +185,13 @@ export function SignIn() {
     }
     const saltNonce =  new Date().getTime().toString();
     
-    const predictedSafeAddress = await safeFactory.predictSafeAddress(safeAccountConfig, saltNonce)
-    console.log('predictedSafeAddress: ', predictedSafeAddress)
+    // const predictedSafeAddress = await safeFactory.predictSafeAddress(safeAccountConfig, saltNonce)
+    // console.log(predictedSafeAddress);
+    // console.log('predictedSafeAddress: ', predictedSafeAddress)
     
     const safeSdk = await safeFactory.deploySafe({ safeAccountConfig, saltNonce })
     const safeAddress = await safeSdk.getAddress()
-    
+
     console.log('Your Safe has been deployed:')
     console.log(safeAddress)
     alert(safeAddress);
@@ -332,7 +326,7 @@ export function SignIn() {
               </svg>
               <span>Sign in With Google</span>
             </Button>
-            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={removeOwner} fullWidth>
+            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={logout} fullWidth>
               <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
               <span>Sign in With Twitter</span>
             </Button>
