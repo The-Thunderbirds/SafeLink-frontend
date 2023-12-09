@@ -16,7 +16,7 @@ import {
   SafeAuthPack,
   SafeAuthUserInfo
 } from '@safe-global/auth-kit'
-
+// 0x37A34c5c036aaD0FED7a7B8f4D73aDdfb69AeaCB - safe
 import { redirect } from "react-router-dom";
 
 const options = {
@@ -87,7 +87,7 @@ export function SignIn() {
   const getSigner = async () => {
     const web3Provider = safeAuthPack?.getProvider()
     if (web3Provider) {
-      const provider = new ethers.providers.Web3Provider(web3Provider)
+      const provider = new ethers.BrowserProvider(web3Provider)
       setProvider(provider)
       const signer = await provider.getSigner()
       return signer;
@@ -129,17 +129,6 @@ export function SignIn() {
     localStorage.setItem("signer", JSON.stringify(signer))
     localStorage.setItem("authSignInInfo", JSON.stringify(safeAuthSignInResponse))
   }
-
-  // const getETHAdapter = async () => {
-  //   if(safeAuthPack == null) return
-  //   const signer = await provider.getSigner()
-  //   const ethAdapter = new EthersAdapter({
-  //     ethers,
-  //     signerOrProvider: signer
-  //   })
-
-  //   return ethAdapter
-  // }
 
   async function getBalance() {
     try {
@@ -186,7 +175,7 @@ export function SignIn() {
     setSafeFactory(safeFactory)
   }
 
-  const createSafeWallet = async () => {
+  const createJointSafeWallet = async () => {
 
     if(!isAuthenticated) return '0x0'
     if(safeFactory == null) {
@@ -195,25 +184,103 @@ export function SignIn() {
 
     const safeAccountConfig = {
       owners: [
-        safeAuthSignInResponse?.eoa
+        safeAuthSignInResponse?.eoa,
+        import.meta.env.VITE_SAFE_LINK_PUBLIC_KEY
       ],
-      threshold: 1,
+      threshold: 2,
     }
     const saltNonce =  new Date().getTime().toString();
     
     const predictedSafeAddress = await safeFactory.predictSafeAddress(safeAccountConfig, saltNonce)
     console.log('predictedSafeAddress: ', predictedSafeAddress)
     
-    const safeSdkOwner1 = await safeFactory.deploySafe({ safeAccountConfig, saltNonce })
-    const safeAddress = await safeSdkOwner1.getAddress()
+    const safeSdk = await safeFactory.deploySafe({ safeAccountConfig, saltNonce })
+    const safeAddress = await safeSdk.getAddress()
     
     console.log('Your Safe has been deployed:')
     console.log(safeAddress)
-    
+    alert(safeAddress);
     return safeAddress || '0x0';
   }
 
-  const airDropGas = async () => {
+  const getSafeWallet = async () => {
+    const safeAddress = "0x0FBF1a01C8d06eb958D730358CF704797C2B2c14"
+
+    const signer = await getSigner();
+
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer
+    })
+
+    const safeSdk = await Safe.create({ ethAdapter: ethAdapter, safeAddress })
+    
+    console.log(await safeSdk.getOwners());
+
+    return safeSdk
+  }
+
+  const addOwner = async () => {
+    const safeAddress = "0x37A34c5c036aaD0FED7a7B8f4D73aDdfb69AeaCB"
+    const toAddAddress = "0x24f8cb46582324b79833f6baCad84D8d18458f36"
+
+    const signer = await getSigner();
+
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer
+    })
+
+    const safeSdk = await Safe.create({ ethAdapter: ethAdapter, safeAddress })
+
+    const params = {
+      ownerAddress: toAddAddress, 
+      threshold: 1
+    }
+    const safeTransaction = await safeSdk.createAddOwnerTx(params)
+    const txResponse = await safeSdk.executeTransaction(safeTransaction)
+    await txResponse.transactionResponse?.wait()
+
+    console.log("Updated owners list", await safeSdk.getOwners())
+  }
+
+  const removeOwner = async () => {
+    const safeAddress = "0x37A34c5c036aaD0FED7a7B8f4D73aDdfb69AeaCB"
+    const toRemoveAddress = "0x24f8cb46582324b79833f6baCad84D8d18458f36"
+
+    const signer = await getSigner();
+
+    const ethAdapter = new EthersAdapter({
+      ethers,
+      signerOrProvider: signer
+    })
+
+    const safeSdk = await Safe.create({ ethAdapter: ethAdapter, safeAddress })
+
+    const params = {
+      ownerAddress: toRemoveAddress,
+      threshold: 1
+    }
+    const safeTransaction = await safeSdk.createRemoveOwnerTx(params)
+    const txResponse = await safeSdk.executeTransaction(safeTransaction)
+    await txResponse.transactionResponse?.wait()
+
+    console.log("Updated owners list", await safeSdk.getOwners())
+  }
+
+  const send = async () => {
+    const toAddress = "0x37A34c5c036aaD0FED7a7B8f4D73aDdfb69AeaCB"
+    const weiValue = "100000000000000"
+
+    const safeTransactionData = {
+      to: toAddress,
+      value: weiValue, // eth value in wei
+      data: '0x<data>'
+    }
+    const safeTransaction = await safeFactory.createTransaction({ transactions: [safeTransactionData] })
+  }
+
+  const sendFromSafe = async () => {
     ;
   }
 
@@ -237,15 +304,6 @@ export function SignIn() {
     // // Execute transaction
     // const txResult = await protocolKit.executeTransaction(tx)
     // uiConsole('Safe Transaction Result', txResult)
-  }
-
-
-
-  const fn = async () => {
-    // const adapter = await getETHAdapter();
-    // const safeSdk = await Safe.create({ ethAdapter: adapter, safeAddress })
-    // console.log(safeSdk.getOwners())
-    console.log("HIi", import.meta.env)
   }
 
   return (
@@ -273,7 +331,7 @@ export function SignIn() {
               </svg>
               <span>Sign in With Google</span>
             </Button>
-            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={logout} fullWidth>
+            <Button size="lg" variant="outlined" className="flex items-center gap-2 justify-center shadow-md" onClick={removeOwner} fullWidth>
               <img src="/img/twitter-logo.svg" height={24} width={24} alt="" />
               <span>Sign in With Twitter</span>
             </Button>
